@@ -50,6 +50,8 @@ pnpm build
 
 原始列表由 Allison Parrish 根据 [wordfreq](https://github.com/rspeer/wordfreq) 导出；词库数据按 [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/)（CC BY-SA 4.0）许可提供。请在分发派生词库时保留以上署名与相同许可。wordfreq 的学术引用信息见其 [README](https://github.com/rspeer/wordfreq#citing-wordfreq)。生成脚本本身为本项目代码。
 
+词页中的美式 IPA 由 [CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict) 本地转换而来；其 BSD-style license 在 `CMUDICT-LICENSE` 中保留。它是发音参考，可能包含多种读音变体。播放按钮使用浏览器的 Web Speech API 和设备可用的系统语音，因此声音与清晰度会随浏览器、操作系统及所选 voice 而变化。
+
 ## 本地数据与备份
 
 词库不会复制到 localStorage。浏览器只保存已浏览/标记过的词进度、按频率刷词的位置、范围、主题和按日统计，键为 `word-pocket:state:v1`。

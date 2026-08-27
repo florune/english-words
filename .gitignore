@@ -3,4 +3,6 @@ dist
 .vite
 *.tsbuildinfo
 scripts/wordfreq-en-25000-log.json
+scripts/cmudict.dict
+scripts/CMUDICT-LICENSE
 .idea

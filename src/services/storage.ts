@@ -8,7 +8,7 @@ export const emptyState = (): StoredState => ({
   frequencyCursor: 1,
   rangeMax: 1000,
   activity: {},
-  settings: { theme: 'system' }
+  settings: { theme: 'system', voiceURI: '' }
 })
 
 export function loadState(): StoredState {

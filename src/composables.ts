@@ -1,11 +1,13 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { clearState, emptyState, isStoredState, loadState, saveState } from './services/storage'
 import { loadWords } from './services/words'
+import { loadPhonetics } from './services/phonetics'
 import { dayKey, daysBetween } from './utils/dates'
 import type { StoredState, StudyMode, WordEntry, WordProgress, WordStatus } from './types/word'
 
 const state = reactive<StoredState>(loadState())
 const words = ref<WordEntry[]>([])
+const phonetics = ref<Record<string, string[]>>({})
 const ready = ref(false)
 const error = ref('')
 const recentRanks = ref<number[]>([])
@@ -49,7 +51,9 @@ export function useStudy() {
 
   async function initialize() {
     try {
-      words.value = await loadWords()
+      const [wordList, phoneticMap] = await Promise.all([loadWords(), loadPhonetics()])
+      words.value = wordList
+      phonetics.value = phoneticMap
       ready.value = true
     } catch (cause) {
       error.value = cause instanceof Error ? cause.message : '词库读取失败'
@@ -110,7 +114,8 @@ export function useStudy() {
   }
   function reset() { clearState(); Object.assign(state, emptyState()) }
   function setTheme(theme: StoredState['settings']['theme']) { state.settings.theme = theme; persist() }
+  function setVoice(voiceURI: string) { state.settings.voiceURI = voiceURI; persist() }
 
   watch(() => state.settings.theme, (theme) => document.documentElement.dataset.theme = theme, { immediate: true })
-  return { state, words, ready, error, totals, today, streak, totalStudyDays, recentProgress, initialize, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme }
+  return { state, words, phonetics, ready, error, totals, today, streak, totalStudyDays, recentProgress, initialize, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme, setVoice }
 }

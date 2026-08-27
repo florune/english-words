@@ -24,5 +24,5 @@ export interface StoredState {
   frequencyCursor: number
   rangeMax: number
   activity: Record<string, ActivityDay>
-  settings: { theme: 'system' | 'light' | 'dark' }
+  settings: { theme: 'system' | 'light' | 'dark'; voiceURI: string }
 }

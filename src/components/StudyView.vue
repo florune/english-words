@@ -11,6 +11,7 @@ const study = useStudy()
 const rank = ref<number>()
 const showInfo = ref(false)
 const word = computed(() => study.wordFor(rank.value))
+const ipa = computed(() => word.value ? study.phonetics.value[word.value.word] ?? [] : [])
 const labels: Record<StudyMode, string> = { frequency: '按频率刷', random: '随机刷', unknown: '只刷不会', fuzzy: '只刷模糊', review: '复习模式' }
 
 function next() {
@@ -21,6 +22,9 @@ function next() {
 function mark(status: Exclude<WordStatus, 'new'>) {
   if (rank.value) study.setStatus(rank.value, status)
   next()
+}
+function pronounce(slow = false) {
+  if (word.value) speakWord(word.value.word, { voiceURI: study.state.settings.voiceURI, slow })
 }
 function keyboard(event: KeyboardEvent) {
   if (event.target instanceof HTMLInputElement) return
@@ -40,11 +44,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyboard))
     <section v-if="word" class="word-stage">
       <p class="word-label">{{ study.getProgress(word.rank).status === 'new' ? '新词' : study.getProgress(word.rank).status }}</p>
       <h1 lang="en">{{ word.word }}</h1>
-      <button class="listen-button" @click="speakWord(word.word)"><span>◖</span> 发音</button>
+      <div v-if="ipa.length" class="phonetic-line" aria-label="美式国际音标"><span>US IPA</span><strong lang="en">/{{ ipa.join('/ · /') }}/</strong></div>
+      <button class="listen-button" @click="pronounce()"><span>◖</span> 系统发音</button>
+      <p class="voice-note">由本机浏览器语音提供，可在设置中切换</p>
       <button class="reveal-button" :aria-expanded="showInfo" @click="showInfo = !showInfo">{{ showInfo ? '收起信息' : '显示信息' }}</button>
       <div v-if="showInfo" class="word-info">
         <p>词频排名 <strong>{{ word.rank }}</strong></p>
-        <button @click="speakWord(word.word)">发音</button><a :href="dictionaryUrl(word.word)" target="_blank" rel="noreferrer">查词 ↗</a>
+        <button @click="pronounce()">发音</button><button @click="pronounce(true)">慢速</button><a :href="dictionaryUrl(word.word)" target="_blank" rel="noreferrer">查词 ↗</a>
       </div>
     </section>
     <section v-else class="empty-stage"><h1>这里暂时没有词</h1><p>先在首页刷几个词，或换一个更大的词库范围。</p><button class="primary-action" @click="emit('close')">回到首页</button></section>
