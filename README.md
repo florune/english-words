@@ -42,6 +42,8 @@ pnpm build
 
 部署完成后即可通过 `https://xxx.pages.dev` 使用。它是标准静态站点，无需环境变量或数据库。
 
+如果在 Cloudflare 的新版界面中创建的是 **Worker**（而非传统 Pages 项目），仓库根目录的 `wrangler.jsonc` 已将 Worker 静态资源目录明确指定为 `dist`；不要把仓库根目录或 `public` 作为部署目录。
+
 ## 词库来源与许可
 
 `public/data/words.json` 从 [aparrish/wordfreq-en-25000](https://github.com/aparrish/wordfreq-en-25000) 的 `wordfreq-en-25000-log.json` 一次性转换而来。保留了全部 25,000 个词、原始顺序和词频对数值，未筛除缩写、人名、地名或可能令人不适的词。
