@@ -42,7 +42,7 @@ pnpm build
 
 部署完成后即可通过 `https://xxx.pages.dev` 使用。它是标准静态站点，无需环境变量或数据库。
 
-如果在 Cloudflare 的新版界面中创建的是 **Worker**（而非传统 Pages 项目），仓库根目录的 `wrangler.jsonc` 已将 Worker 静态资源目录明确指定为 `dist`；不要把仓库根目录或 `public` 作为部署目录。
+仓库根目录的 `wrangler.jsonc` 同样将 Pages 构建输出固定为 `./dist`，避免重新导入项目时错误发布仓库源码。
 
 ## 词库来源与许可
 
