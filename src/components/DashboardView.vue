@@ -7,9 +7,11 @@ defineProps<{
   streak: number
   totalStudyDays: number
   rangeMax: number
+  themeMode: 'system' | 'light' | 'dark'
+  isDark: boolean
   recent: Array<{ word: { rank: number; word: string } | undefined; progress: { status: string } }>
 }>()
-const emit = defineEmits<{ study: [StudyMode]; range: [number]; settings: [] }>()
+const emit = defineEmits<{ study: [StudyMode]; range: [number]; settings: []; toggleTheme: [] }>()
 const ranges = [1000, 3000, 5000, 10000, 25000]
 </script>
 
@@ -17,7 +19,7 @@ const ranges = [1000, 3000, 5000, 10000, 25000]
   <main class="page dashboard">
     <header class="topbar">
       <div><p class="eyebrow">你的随手词库</p><h1>English Words</h1></div>
-      <button class="icon-button" aria-label="设置" @click="emit('settings')">⚙</button>
+      <div class="header-actions"><button class="theme-toggle" :aria-label="isDark ? '切换为浅色主题' : '切换为深色主题'" @click="emit('toggleTheme')"><span aria-hidden="true">{{ isDark ? '☼' : '☾' }}</span></button><button class="icon-button" aria-label="设置" @click="emit('settings')">⚙</button></div>
     </header>
 
     <section class="summary-card">

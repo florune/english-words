@@ -46,6 +46,7 @@ export function useStudy() {
     return count
   })
   const totalStudyDays = computed(() => Object.values(state.activity).filter((item) => item.viewed > 0).length)
+  const isDark = computed(() => state.settings.theme === 'dark' || (state.settings.theme === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches))
   const recentProgress = computed(() => Object.entries(state.progress)
     .filter(([, item]) => item.viewedCount > 0)
     .sort(([, a], [, b]) => b.lastViewedAt - a.lastViewedAt).slice(0, 5)
@@ -117,8 +118,13 @@ export function useStudy() {
   }
   function reset() { clearState(); Object.assign(state, emptyState()) }
   function setTheme(theme: StoredState['settings']['theme']) { state.settings.theme = theme; persist() }
+  function toggleTheme() {
+    const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    const isDark = state.settings.theme === 'dark' || (state.settings.theme === 'system' && systemDark)
+    setTheme(isDark ? 'light' : 'dark')
+  }
   function setVoice(voiceURI: string) { state.settings.voiceURI = voiceURI; persist() }
 
   watch(() => state.settings.theme, (theme) => document.documentElement.dataset.theme = theme, { immediate: true })
-  return { state, words, phonetics, translations, ready, error, totals, today, streak, totalStudyDays, recentProgress, initialize, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme, setVoice }
+  return { state, words, phonetics, translations, ready, error, totals, today, streak, totalStudyDays, isDark, recentProgress, initialize, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme, toggleTheme, setVoice }
 }

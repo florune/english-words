@@ -27,6 +27,7 @@ function mark(status: Exclude<WordStatus, 'new'>) {
 function pronounce(slow = false) {
   if (word.value) speakWord(word.value.word, { voiceURI: study.state.settings.voiceURI, slow })
 }
+function toggleTheme() { study.toggleTheme() }
 function keyboard(event: KeyboardEvent) {
   if (event.target instanceof HTMLInputElement) return
   if (event.key === '1') mark('unknown')
@@ -41,7 +42,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyboard))
 
 <template>
   <main class="study-page">
-    <header class="study-header"><button class="back-button" @click="emit('close')">← 返回</button><span>{{ labels[mode] }}</span><span v-if="word">{{ word.rank }} / {{ study.words.value.length }}</span></header>
+    <header class="study-header"><button class="back-button" @click="emit('close')">← 返回</button><span>{{ labels[mode] }}</span><div v-if="word" class="study-meta"><button class="theme-toggle" :aria-label="study.isDark.value ? '切换为浅色主题' : '切换为深色主题'" @click="toggleTheme">{{ study.isDark.value ? '☼' : '☾' }}</button><span>{{ word.rank }} / {{ study.words.value.length }}</span></div></header>
     <section v-if="word" class="word-stage">
       <p class="word-label">{{ study.getProgress(word.rank).status === 'new' ? '新词' : study.getProgress(word.rank).status }}</p>
       <h1 lang="en">{{ word.word }}</h1>
