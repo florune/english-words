@@ -20,8 +20,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="!study.ready && !study.error" class="loading-screen"><span>English Words</span><i /></div>
-  <div v-else-if="study.error" class="loading-screen"><strong>词库没有加载成功</strong><p>{{ study.error }}</p><button @click="study.initialize">重试</button></div>
+  <div v-if="!study.ready.value && !study.error.value" class="loading-screen"><span>English Words</span><i /></div>
+  <div v-else-if="study.error.value" class="loading-screen"><strong>词库没有加载成功</strong><p>{{ study.error.value }}</p><button @click="study.initialize">重试</button></div>
   <DashboardView v-else-if="page === 'home'" :total="study.totals.value" :today="study.today.value" :streak="study.streak.value" :total-study-days="study.totalStudyDays.value" :range-max="study.state.rangeMax" :recent="study.recentProgress.value" @study="start" @range="study.setRange" @settings="go('#/settings')" />
   <StudyView v-else-if="page === 'study'" :mode="mode" @close="close" />
   <SettingsView v-else @close="close" />
