@@ -12,6 +12,7 @@ const rank = ref<number>()
 const showInfo = ref(false)
 const word = computed(() => study.wordFor(rank.value))
 const ipa = computed(() => word.value ? study.phonetics.value[word.value.word] ?? [] : [])
+const translation = computed(() => word.value ? study.translations.value[word.value.word] ?? [] : [])
 const labels: Record<StudyMode, string> = { frequency: '按频率刷', random: '随机刷', unknown: '只刷不会', fuzzy: '只刷模糊', review: '复习模式' }
 
 function next() {
@@ -49,8 +50,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keyboard))
       <p class="voice-note">由本机浏览器语音提供，可在设置中切换</p>
       <button class="reveal-button" :aria-expanded="showInfo" @click="showInfo = !showInfo">{{ showInfo ? '收起信息' : '显示信息' }}</button>
       <div v-if="showInfo" class="word-info">
-        <p>词频排名 <strong>{{ word.rank }}</strong></p>
-        <button @click="pronounce()">发音</button><button @click="pronounce(true)">慢速</button><a :href="dictionaryUrl(word.word)" target="_blank" rel="noreferrer">查词 ↗</a>
+        <div class="definition-block"><p>词频排名 <strong>{{ word.rank }}</strong></p><template v-if="translation.length"><span>中文释义</span><ul><li v-for="item in translation" :key="item">{{ item }}</li></ul></template><p v-else class="missing-definition">暂无本地中文释义，可使用查词。</p></div>
+        <div class="word-actions"><button @click="pronounce()">发音</button><button @click="pronounce(true)">慢速</button><a :href="dictionaryUrl(word.word)" target="_blank" rel="noreferrer">查词 ↗</a></div>
       </div>
     </section>
     <section v-else class="empty-stage"><h1>这里暂时没有词</h1><p>先在首页刷几个词，或换一个更大的词库范围。</p><button class="primary-action" @click="emit('close')">回到首页</button></section>

@@ -5,4 +5,6 @@ dist
 scripts/wordfreq-en-25000-log.json
 scripts/cmudict.dict
 scripts/CMUDICT-LICENSE
+scripts/ecdict.csv
+scripts/ECDICT-LICENSE
 .idea

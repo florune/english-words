@@ -52,6 +52,8 @@ pnpm build
 
 词页中的美式 IPA 由 [CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict) 本地转换而来；其 BSD-style license 在 `CMUDICT-LICENSE` 中保留。它是发音参考，可能包含多种读音变体。播放按钮使用浏览器的 Web Speech API 和设备可用的系统语音，因此声音与清晰度会随浏览器、操作系统及所选 voice 而变化。
 
+点击“显示信息”会展示本地中文释义。该数据从 [ECDICT](https://github.com/skywind3000/ECDICT) 的 `translation` 字段裁剪而来，命中 22,057 个词；其 MIT license 在 `ECDICT-LICENSE` 中保留。
+
 ## 本地数据与备份
 
 词库不会复制到 localStorage。浏览器只保存已浏览/标记过的词进度、按频率刷词的位置、范围、主题和按日统计，键为 `word-pocket:state:v1`。

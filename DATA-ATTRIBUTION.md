@@ -9,3 +9,7 @@ The upstream source notes that it intentionally makes no attempt to filter offen
 ## IPA pronunciation data
 
 `public/data/phonetics.json` is a transformed subset of the [CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict), Copyright (C) 1993–2015 Carnegie Mellon University. It is converted from ARPABET to US English IPA locally and may include multiple pronunciation variants. The CMUdict BSD-style license is preserved in [CMUDICT-LICENSE](./CMUDICT-LICENSE).
+
+## Chinese translations
+
+`public/data/translations.json` is a transformed subset of the [ECDICT English-Chinese Dictionary](https://github.com/skywind3000/ECDICT), Copyright (c) 2025 Linwei. It retains Chinese translation lines only for words in this project's source frequency list. The ECDICT MIT License is preserved in [ECDICT-LICENSE](./ECDICT-LICENSE).

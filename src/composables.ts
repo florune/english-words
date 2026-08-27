@@ -2,12 +2,14 @@ import { computed, reactive, ref, watch } from 'vue'
 import { clearState, emptyState, isStoredState, loadState, saveState } from './services/storage'
 import { loadWords } from './services/words'
 import { loadPhonetics } from './services/phonetics'
+import { loadTranslations } from './services/translations'
 import { dayKey, daysBetween } from './utils/dates'
 import type { StoredState, StudyMode, WordEntry, WordProgress, WordStatus } from './types/word'
 
 const state = reactive<StoredState>(loadState())
 const words = ref<WordEntry[]>([])
 const phonetics = ref<Record<string, string[]>>({})
+const translations = ref<Record<string, string[]>>({})
 const ready = ref(false)
 const error = ref('')
 const recentRanks = ref<number[]>([])
@@ -51,9 +53,10 @@ export function useStudy() {
 
   async function initialize() {
     try {
-      const [wordList, phoneticMap] = await Promise.all([loadWords(), loadPhonetics()])
+      const [wordList, phoneticMap, translationMap] = await Promise.all([loadWords(), loadPhonetics(), loadTranslations()])
       words.value = wordList
       phonetics.value = phoneticMap
+      translations.value = translationMap
       ready.value = true
     } catch (cause) {
       error.value = cause instanceof Error ? cause.message : '词库读取失败'
@@ -117,5 +120,5 @@ export function useStudy() {
   function setVoice(voiceURI: string) { state.settings.voiceURI = voiceURI; persist() }
 
   watch(() => state.settings.theme, (theme) => document.documentElement.dataset.theme = theme, { immediate: true })
-  return { state, words, phonetics, ready, error, totals, today, streak, totalStudyDays, recentProgress, initialize, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme, setVoice }
+  return { state, words, phonetics, translations, ready, error, totals, today, streak, totalStudyDays, recentProgress, initialize, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme, setVoice }
 }
