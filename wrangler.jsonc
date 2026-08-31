@@ -2,5 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "english-words",
   "pages_build_output_dir": "./dist",
-  "compatibility_date": "2026-08-27"
+  "compatibility_date": "2026-08-27",
+  "d1_databases": [
+    {
+      "binding": "PROGRESS_DB",
+      "database_name": "english-words-progress",
+      "database_id": "e63bdc8d-dff2-4d96-ba9f-45e734bb7db9"
+    }
+  ]
 }
