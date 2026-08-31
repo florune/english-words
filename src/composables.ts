@@ -1,8 +1,10 @@
 import { computed, reactive, ref, watch } from 'vue'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { clearState, emptyState, isStoredState, loadState, saveState } from './services/storage'
 import { loadWords } from './services/words'
 import { loadPhonetics } from './services/phonetics'
 import { loadTranslations } from './services/translations'
+import { createAuthClient, getRemoteProgress, loadSyncConfig, saveRemoteProgress } from './services/sync'
 import { dayKey, daysBetween } from './utils/dates'
 import type { StoredState, StudyMode, WordEntry, WordProgress, WordStatus } from './types/word'
 
@@ -13,8 +15,16 @@ const translations = ref<Record<string, string[]>>({})
 const ready = ref(false)
 const error = ref('')
 const recentRanks = ref<number[]>([])
+type SyncPhase = 'checking' | 'unavailable' | 'signed-out' | 'code-sent' | 'syncing' | 'synced' | 'error'
+const syncPhase = ref<SyncPhase>('checking')
+const syncEmail = ref('')
+const syncMessage = ref('')
+const lastSyncedAt = ref<number>()
+let syncClient: SupabaseClient | undefined
+let syncTimer: ReturnType<typeof window.setTimeout> | undefined
+let scheduleSyncAction: () => void = () => undefined
 
-function persist() { saveState(state) }
+function persist() { saveState(state); scheduleSyncAction() }
 function recordActivity(kind: 'viewed' | 'marked') {
   const key = dayKey()
   state.activity[key] ??= { viewed: 0, marked: 0 }
@@ -52,6 +62,110 @@ export function useStudy() {
     .sort(([, a], [, b]) => b.lastViewedAt - a.lastViewedAt).slice(0, 5)
     .map(([rank, progress]) => ({ word: words.value[Number(rank) - 1], progress })))
 
+  function mergeCloudState(remote: StoredState) {
+    const progress: StoredState['progress'] = {}
+    const ranks = new Set([...Object.keys(state.progress), ...Object.keys(remote.progress)])
+    for (const rank of ranks) {
+      const local = state.progress[Number(rank)]
+      const cloud = remote.progress[Number(rank)]
+      if (!local && cloud) { progress[Number(rank)] = cloud; continue }
+      if (local && !cloud) { progress[Number(rank)] = local; continue }
+      if (!local || !cloud) continue
+      const newest = cloud.lastViewedAt > local.lastViewedAt ? cloud : local
+      progress[Number(rank)] = {
+        status: newest.status,
+        viewedCount: Math.max(local.viewedCount, cloud.viewedCount),
+        lastViewedAt: Math.max(local.lastViewedAt, cloud.lastViewedAt)
+      }
+    }
+    const activity: StoredState['activity'] = {}
+    const days = new Set([...Object.keys(state.activity), ...Object.keys(remote.activity)])
+    for (const day of days) {
+      const local = state.activity[day]
+      const cloud = remote.activity[day]
+      activity[day] = { viewed: Math.max(local?.viewed ?? 0, cloud?.viewed ?? 0), marked: Math.max(local?.marked ?? 0, cloud?.marked ?? 0) }
+    }
+    Object.assign(state, { ...state, progress, activity })
+    saveState(state)
+  }
+
+  function setSignedOut(message = '') {
+    syncEmail.value = ''
+    syncPhase.value = 'signed-out'
+    syncMessage.value = message
+  }
+
+  async function syncNow() {
+    if (!syncClient) { syncPhase.value = 'unavailable'; return false }
+    const { data: { session } } = await syncClient.auth.getSession()
+    if (!session) { setSignedOut('请登录后再同步。'); return false }
+    syncEmail.value = session.user.email ?? ''
+    syncPhase.value = 'syncing'
+    syncMessage.value = '正在合并本机与云端进度…'
+    try {
+      const remote = await getRemoteProgress(session.access_token)
+      if (remote.state) mergeCloudState(remote.state)
+      const saved = await saveRemoteProgress(session.access_token, state)
+      lastSyncedAt.value = saved.updatedAt ?? Date.now()
+      syncPhase.value = 'synced'
+      syncMessage.value = '已同步到云端。'
+      return true
+    } catch (cause) {
+      syncPhase.value = 'error'
+      syncMessage.value = cause instanceof Error ? cause.message : '同步失败，请稍后重试。'
+      return false
+    }
+  }
+
+  function scheduleSync() {
+    if (!syncClient || !['synced', 'syncing'].includes(syncPhase.value)) return
+    if (syncTimer) window.clearTimeout(syncTimer)
+    syncTimer = window.setTimeout(() => { void syncNow() }, 1_200)
+  }
+
+  async function initializeSync() {
+    const config = await loadSyncConfig()
+    if (!config) {
+      syncPhase.value = 'unavailable'
+      syncMessage.value = '云端同步尚未配置；学习记录仍只保存在本机。'
+      return
+    }
+    syncClient = createAuthClient(config)
+    const { data: { session } } = await syncClient.auth.getSession()
+    if (!session) { setSignedOut('登录后可在设备间自动同步进度。'); return }
+    syncEmail.value = session.user.email ?? ''
+    await syncNow()
+  }
+
+  async function requestSyncCode(email: string) {
+    if (!syncClient) { syncMessage.value = '云端同步尚未配置。'; return false }
+    const normalized = email.trim().toLowerCase()
+    if (!/^\S+@\S+\.\S+$/.test(normalized)) { syncMessage.value = '请输入有效的邮箱地址。'; return false }
+    syncPhase.value = 'syncing'
+    syncMessage.value = '正在发送验证码…'
+    const { error: authError } = await syncClient.auth.signInWithOtp({ email: normalized, options: { emailRedirectTo: window.location.origin } })
+    if (authError) { syncPhase.value = 'error'; syncMessage.value = authError.message; return false }
+    syncEmail.value = normalized
+    syncPhase.value = 'code-sent'
+    syncMessage.value = '登录邮件已发送：可输入六码验证码，或直接点击邮件中的登录链接。'
+    return true
+  }
+
+  async function verifySyncCode(code: string) {
+    if (!syncClient || !syncEmail.value) { syncMessage.value = '请先填写邮箱并获取验证码。'; return false }
+    const token = code.trim()
+    if (!/^\d{6}$/.test(token)) { syncMessage.value = '请输入 6 位验证码。'; return false }
+    syncPhase.value = 'syncing'
+    const { data, error: authError } = await syncClient.auth.verifyOtp({ email: syncEmail.value, token, type: 'email' })
+    if (authError || !data.session) { syncPhase.value = 'error'; syncMessage.value = authError?.message ?? '验证码无效或已过期。'; return false }
+    return syncNow()
+  }
+
+  async function signOutSync() {
+    if (syncClient) await syncClient.auth.signOut({ scope: 'local' })
+    setSignedOut('已退出同步，本机学习记录不会被删除。')
+  }
+
   async function initialize() {
     try {
       const [wordList, phoneticMap, translationMap] = await Promise.all([loadWords(), loadPhonetics(), loadTranslations()])
@@ -59,6 +173,7 @@ export function useStudy() {
       phonetics.value = phoneticMap
       translations.value = translationMap
       ready.value = true
+      void initializeSync()
     } catch (cause) {
       error.value = cause instanceof Error ? cause.message : '词库读取失败'
     }
@@ -126,5 +241,6 @@ export function useStudy() {
   function setVoice(voiceURI: string) { state.settings.voiceURI = voiceURI; persist() }
 
   watch(() => state.settings.theme, (theme) => document.documentElement.dataset.theme = theme, { immediate: true })
-  return { state, words, phonetics, translations, ready, error, totals, today, streak, totalStudyDays, isDark, recentProgress, initialize, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme, toggleTheme, setVoice }
+  scheduleSyncAction = scheduleSync
+  return { state, words, phonetics, translations, ready, error, totals, today, streak, totalStudyDays, isDark, recentProgress, syncPhase, syncEmail, syncMessage, lastSyncedAt, initialize, initializeSync, syncNow, requestSyncCode, verifySyncCode, signOutSync, setRange, getProgress, trackView, setStatus, nextRank, wordFor, exportProgress, importProgress, reset, setTheme, toggleTheme, setVoice }
 }

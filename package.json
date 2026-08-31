@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc -b && tsc -p functions/tsconfig.json && vite build",
     "preview": "vite preview",
     "build:words": "node scripts/build-word-list.mjs scripts/wordfreq-en-25000-log.json public/data/words.json",
     "build:phonetics": "node scripts/build-phonetics.mjs scripts/cmudict.dict public/data/words.json public/data/phonetics.json",
     "build:translations": "node scripts/build-translations.mjs scripts/ecdict.csv public/data/words.json public/data/translations.json"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "vue": "^3.5.18",
     "workbox-window": "^7.3.0"
   },

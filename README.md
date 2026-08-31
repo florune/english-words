@@ -1,6 +1,6 @@
 # English Words
 
-一个为自己而做的纯静态英语高频词学习工具：打开、判断会不会、下一个。没有账户、后端、任务压力或付费 API。
+一个为自己而做的英语高频词学习工具：打开、判断会不会、下一个。默认不需要账户、后端、任务压力或付费 API；可选邮箱登录只用于跨设备同步进度。
 
 ## 功能
 
@@ -11,6 +11,7 @@
 - localStorage 导入、导出和双重确认的清空操作
 - 手机优先、浅色/深色/跟随系统主题、键盘快捷键
 - PWA：支持添加至主屏幕；首访后会缓存应用与词库，离线时也尽量可用
+- 可选的邮箱验证码登录与 D1 云端同步：未登录时仍完全使用本机 localStorage
 
 ## 本地开发
 
@@ -40,9 +41,27 @@ pnpm build
 | Build output directory | `dist` |
 | Node version | 20 或更高 |
 
-部署完成后即可通过 `https://xxx.pages.dev` 使用。它是标准静态站点，无需环境变量或数据库。
+部署完成后即可通过 `https://xxx.pages.dev` 使用。未启用云端同步时，它是标准静态站点，无需环境变量或数据库。
 
 仓库根目录的 `wrangler.jsonc` 同样将 Pages 构建输出固定为 `./dist`，避免重新导入项目时错误发布仓库源码。
+
+### 可选：登录与云端同步
+
+同步功能不会阻止任何人使用网站；未登录用户继续使用本机 localStorage。需要跨设备保存时，网站使用 Supabase Auth 的邮箱验证码确认身份，并由 Pages Functions 将该用户的进度保存到 Cloudflare D1。
+
+1. 在 Supabase 创建项目，启用 Email provider。
+2. 在 `Authentication → URL Configuration` 将 Site URL 设为 `https://english.learn.byflorune.com`，并把同一地址加入 Redirect URLs。
+3. 默认邮件会发送登录链接；用户点击链接后会返回网站并自动同步。若之后配置了自定义 SMTP，可在 `Authentication → Emails → Templates` 的 Magic Link/OTP 模板中使用 `{{ .Token }}`，改为发送六码验证码。详情见 [Supabase 邮箱模板文档](https://supabase.com/docs/guides/auth/auth-email-templates)。
+4. 在 Cloudflare Pages 项目 `Settings → Variables and Secrets` 添加两项普通变量：
+
+| 名称 | 值 |
+| --- | --- |
+| `SUPABASE_URL` | Supabase 项目的 Project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Supabase 项目的 Publishable key |
+
+5. 在 `Settings → Bindings` 确认 D1 binding 名为 `PROGRESS_DB`，并重新部署。
+
+Publishable key 可在浏览器使用，不是 Supabase 的 secret/service-role key；绝不能将 `service_role` 或 `sb_secret_` 密钥放入 Cloudflare Pages 变量或前端。Pages Function 会将访问令牌发送给 Supabase Auth 验证，再按 Supabase 用户 ID 隔离 D1 数据。`functions/api/progress.ts` 会在第一次同步时自动创建所需的 `word_progress` 表。
 
 ## 词库来源与许可
 
